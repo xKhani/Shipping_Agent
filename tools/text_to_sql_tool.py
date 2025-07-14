@@ -253,20 +253,31 @@ def generate_sql_with_sqlcoder(user_prompt: str) -> str:
 
         print(f"\n[DEBUG] Schema Text Provided to SQLCoder:\n{schema_text}\n")
 
+        # --- CORRECTED FEW-SHOT EXAMPLES HERE ---
+        # The examples now explicitly include the "User's request:" and "SQL:" prefixes
+        # to teach the model the exact input/output format.
+        examples = """
+User's request: How many shipments are currently pending?
+SQL: SELECT COUNT(*) FROM shipment WHERE "internalStatus" = 'pending';
+
+User's request: List all accounts created after 2024-01-01.
+SQL: SELECT id, type, title FROM account WHERE "createdAt" > '2024-01-01';
+
+User's request: Show the total cost of all shipments.
+SQL: SELECT SUM(cost) FROM shipment;
+"""
+
         prompt = f"""
-### PostgreSQL Schema (with relationships):
+You are a PostgreSQL SQL expert.
+Based on the following schema, write a SQL query to answer the user's request.
+Only return the SQL query, and nothing else. Do not add any explanations or text.
+
 {schema_text}
 
-### Question:
-{user_prompt.strip()}
+{examples}
 
-### Instructions:
-- Generate a complete PostgreSQL SQL query.
-- ONLY use TABLE and COLUMN names that EXACTLY MATCH the schema above.
-- Always use double quotes (") around all table and column names.
-- Use aliases where needed and only return the SQL — no extra text.
-
-### The SQL query to answer the question is:
+User's request: {user_prompt}
+SQL:
 """
 
         response = requests.post(
