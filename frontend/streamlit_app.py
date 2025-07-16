@@ -1,3 +1,4 @@
+# streamlit_app.py
 import streamlit as st
 import requests
 # import json # Not strictly needed if response is always plain string, but harmless
