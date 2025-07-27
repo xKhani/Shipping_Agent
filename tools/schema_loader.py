@@ -1,146 +1,169 @@
 # tools/schema_loader.py
+import os
+import sys
+import psycopg2
+import psycopg2.extras
+from collections import defaultdict
+from Levenshtein import distance
 
-import requests
-import json
-import re
-from Levenshtein import distance # Assuming you have python-Levenshtein installed
-from collections import defaultdict # To group columns by table for fuzzy matching
+# make sure we can import config from project root
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from config import DB_CONFIG
 
-# Define your OLLAMA_API_BASE_URL (replace with your actual URL or import from config)
-# from config import OLLAMA_API_BASE_URL # Uncomment if you have this in config.py
-OLLAMA_API_BASE_URL = "http://localhost:11434" # Default if not using config.py
 
 def fetch_schema_text():
+    """
+    Connects to PostgreSQL, inspects tables, columns, and foreign keys,
+    and returns:
+      schema_text_for_llm (str),
+      relationships (list of dicts),
+      tables_data (list of dicts),
+      column_lookup (dict)
+    """
+    schema_text_for_llm = ""
+    relationships = []
+    tables_data = []
+    column_lookup = {}
+
     try:
-        # Fetch schema from Ollama's /api/tags endpoint or a predefined schema
-        # For simplicity, let's use a hardcoded example schema similar to previous context
-        # In a real application, this would dynamically pull from your DB or a schema service.
-        
-        # Example schema structure (replace with your actual schema details)
-        schema_data = {
-            "tables": [
-                {
-                    "name": "shipment",
-                    "columns": [
-                        {"name": "id", "type": "INTEGER", "description": "Primary key"},
-                        {"name": "orderId", "type": "INTEGER", "description": "Foreign key to order table"},
-                        {"name": "courierServiceTypeId", "type": "INTEGER", "description": "Foreign key to courier table"},
-                        {"name": "deliveryDate", "type": "DATE", "description": "Date of delivery"},
-                        {"name": "shipped", "type": "BOOLEAN", "description": "Whether the shipment has been shipped"},
-                        {"name": "createdAt", "type": "TIMESTAMP", "description": "Timestamp of creation"}
-                    ]
-                },
-                {
-                    "name": "order",
-                    "columns": [
-                        {"name": "id", "type": "INTEGER", "description": "Primary key"},
-                        {"name": "orderNumber", "type": "TEXT", "description": "Unique order identifier"},
-                        {"name": "accountId", "type": "INTEGER", "description": "Foreign key to account table"}, # <--- Assuming this is the actual name
-                        {"name": "shippingAccountId", "type": "INTEGER", "description": "Foreign key to shipping account table"},
-                        {"name": "shipToId", "type": "INTEGER", "description": "Foreign key to shipment table for shipping address"}
-                    ]
-                },
-                {
-                    "name": "courier",
-                    "columns": [
-                        {"name": "id", "type": "INTEGER", "description": "Primary key"},
-                        {"name": "name", "type": "TEXT", "description": "Name of the courier"}
-                    ]
-                },
-                {
-                    "name": "account",
-                    "columns": [
-                        {"name": "id", "type": "INTEGER", "description": "Primary key"},
-                        {"name": "title", "type": "TEXT", "description": "Title of the account"}
-                    ]
-                }
-                # ... add other tables as per your actual schema
-            ],
-            "relationships": [
-                {"from_table": "shipment", "from_column": "orderId", "to_table": "order", "to_column": "id"},
-                {"from_table": "shipment", "from_column": "courierServiceTypeId", "to_table": "courier", "to_column": "id"},
-                {"from_table": "order", "from_column": "accountId", "to_table": "account", "to_column": "id"} # <--- Relationship using assumed 'accountId'
-            ]
+        conn = psycopg2.connect(**DB_CONFIG)
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+        # get columns
+        cur.execute("""
+            SELECT
+                table_name,
+                column_name,
+                data_type,
+                is_nullable,
+                column_default,
+                ordinal_position
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+            ORDER BY table_name, ordinal_position;
+        """)
+        columns_raw = cur.fetchall()
+
+        # get comments
+        cur.execute("""
+            SELECT
+                c.relname AS table_name,
+                a.attname AS column_name,
+                pg_catalog.col_description(a.attrelid, a.attnum) AS column_description
+            FROM pg_catalog.pg_class c
+            JOIN pg_catalog.pg_attribute a ON a.attrelid = c.oid
+            WHERE c.relkind = 'r'
+              AND c.relname NOT LIKE 'pg_%'
+              AND c.relname NOT LIKE 'sql_%'
+              AND a.attnum > 0
+              AND NOT a.attisdropped;
+        """)
+        comments_raw = cur.fetchall()
+        column_comments = {
+            (row['table_name'], row['column_name']): row['column_description']
+            for row in comments_raw if row['column_description']
         }
 
-        schema_text_lines = []
-        column_lookup = {} # (table_lower, column_lower) -> original_column_name
-        
-        for table in schema_data["tables"]:
-            table_name = table["name"]
-            table_name_lower = table_name.lower()
-            schema_text_lines.append(f"CREATE TABLE {table_name} (")
-            col_definitions = []
-            for col in table["columns"]:
-                col_name = col["name"]
-                col_type = col["type"]
-                col_desc = col.get("description", "")
-                
-                col_definitions.append(f'  "{col_name}" {col_type} -- {col_desc}')
-                column_lookup[(table_name_lower, col_name.lower())] = col_name
-            schema_text_lines.append(",\n".join(col_definitions))
-            schema_text_lines.append(");")
+        # organize
+        tables_map = defaultdict(list)
+        for col in columns_raw:
+            t = col['table_name']
+            c = col['column_name']
+            tables_map[t].append(col)
+            column_lookup[(t.lower(), c.lower())] = c
 
-        relationships_text = []
-        for rel in schema_data["relationships"]:
-            relationships_text.append(
-                f"-- {rel['from_table']}.{rel['from_column']} -> {rel['to_table']}.{rel['to_column']}"
-            )
-        
-        full_schema_text = "\n".join(schema_text_lines) + "\n\n" + "\n".join(relationships_text)
+        for tname, col_list in tables_map.items():
+            schema_text_for_llm += f'CREATE TABLE "{tname}" (\n'
+            current_cols = []
+            for c in col_list:
+                cname = c['column_name']
+                ctype = c['data_type']
+                nullable = '' if c['is_nullable'] == 'YES' else 'NOT NULL'
+                default_val = c['column_default'] or ''
+                comment = column_comments.get((tname, cname), '')
+                line = f'  "{cname}" {ctype}'
+                if nullable:
+                    line += f" {nullable}"
+                if default_val:
+                    line += f" DEFAULT {default_val}"
+                if comment:
+                    line += f" -- {comment}"
+                schema_text_for_llm += line + ",\n"
+                current_cols.append({"name": cname, "type": ctype, "description": comment})
+            schema_text_for_llm = schema_text_for_llm.rstrip(',\n') + "\n);\n\n"
+            tables_data.append({"name": tname, "columns": current_cols})
 
-        # print(f"[DEBUG] Generated Column Lookup: {column_lookup}") # Uncomment to see the full lookup table
+        # foreign keys
+        cur.execute("""
+            SELECT
+                kcu.table_name AS from_table,
+                kcu.column_name AS from_column,
+                ccu.table_name AS to_table,
+                ccu.column_name AS to_column
+            FROM information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu
+              ON tc.constraint_name = kcu.constraint_name
+             AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu
+              ON ccu.constraint_name = tc.constraint_name
+             AND ccu.table_schema = tc.table_schema
+            WHERE tc.constraint_type = 'FOREIGN KEY'
+              AND tc.table_schema = 'public';
+        """)
+        for row in cur.fetchall():
+            relationships.append({
+                "from_table": row['from_table'],
+                "from_column": row['from_column'],
+                "to_table": row['to_table'],
+                "to_column": row['to_column']
+            })
+            schema_text_for_llm += f'-- "{row["from_table"]}"."{row["from_column"]}" -> "{row["to_table"]}"."{row["to_column"]}"\n'
 
-        return full_schema_text, schema_data["relationships"], schema_data["tables"], column_lookup
+        cur.close()
+        conn.close()
+        print("[DEBUG] ✅ Schema loaded, tables:", list(tables_map.keys()))
+        return schema_text_for_llm, relationships, tables_data, column_lookup
 
     except Exception as e:
-        return f"[ERROR] Failed to load schema: {e}", None, None, None
+        return f"[ERROR] Failed to fetch schema: {e}", None, None, None
 
-def correct_column_name(table_name_lower: str, column_name_from_sql_lower: str, column_lookup: dict) -> str:
+
+def correct_column_name(table_name_lower: str, column_name_lower: str, column_lookup: dict):
     """
-    Corrects a column name to its exact case as per the schema, or finds a fuzzy match.
+    Returns corrected column name (exact or fuzzy) for the given table.
     """
-    print(f"[DEBUG-CORRECT_COL] Called for table '{table_name_lower}', column '{column_name_from_sql_lower}'")
+    key = (table_name_lower, column_name_lower)
+    if key in column_lookup:
+        return column_lookup[key]
 
-    # 1. Direct match (case-insensitive)
-    if (table_name_lower, column_name_from_sql_lower) in column_lookup:
-        corrected = column_lookup[(table_name_lower, column_name_from_sql_lower)]
-        print(f"[DEBUG-CORRECT_COL] Direct match found: '{corrected}'")
-        return corrected
+    # fuzzy match
+    best_match = None
+    best_distance = 3  # only consider if distance < 3
+    for (t, c_lower), orig in column_lookup.items():
+        if t == table_name_lower:
+            d = distance(column_name_lower, c_lower)
+            if d < best_distance:
+                best_distance = d
+                best_match = orig
 
-    # 2. Try fuzzy matching (Levenshtein distance)
-    best_match_name = column_name_from_sql_lower
-    min_distance = 2 # Max allowed Levenshtein distance for correction (e.g., 'id' vs 'ID' is 0, 'created_at' vs 'createdAt' might be higher)
+    if best_match:
+        print(f"[INFO] Fuzzy match for '{column_name_lower}' in '{table_name_lower}': -> '{best_match}'")
+        return best_match
 
-    for (tbl_lower, col_lower), original_col_name in column_lookup.items():
-        if tbl_lower == table_name_lower: # Only consider columns from the same table
-            distance_val = distance(column_name_from_sql_lower, col_lower)
-            if distance_val < min_distance:
-                min_distance = distance_val
-                best_match_name = original_col_name
-    
-    if best_match_name != column_name_from_sql_lower:
-        print(f"[DEBUG-CORRECT_COL] Fuzzy match found: '{best_match_name}' (distance {min_distance}) for '{column_name_from_sql_lower}'")
-        return best_match_name
-    
-    # 3. If no direct or fuzzy match, return the original lowercased column name from SQL
-    # This means the column was not found in the schema or was too different.
-    print(f"[DEBUG-CORRECT_COL] No correction found. Returning original: '{column_name_from_sql_lower}'")
-    return column_name_from_sql_lower
+    return column_name_lower  # return original if nothing found
+
 
 if __name__ == "__main__":
-    schema_text, rels, raw, col_lookup = fetch_schema_text()
-    if schema_text.startswith("[ERROR]"):
-        print(schema_text)
-    else:
-        print("\n--- SCHEMA TEXT ---")
-        print(schema_text)
-        print("\n--- RAW STRUCTURE ---")
-        for t in raw:
-            print(f"{t['name']}: {[c['name'] for c in t['columns']]}")
-        print("\n--- COLUMN LOOKUP ---")
-        for k, v in col_lookup.items():
-            print(f"{k} -> {v}")
-        print("\n--- TEST COLUMN CORRECTION ---")
-        print(f"shipment.shippingaccountid -> shipment.{correct_column_name('shipment', 'shippingaccountid', col_lookup)}")
-        print(f"order.order_number -> order.{correct_column_name('order', 'order_number', col_lookup)}") # Example of a common typo
+    text, rels, tables, lookup = fetch_schema_text()
+    if isinstance(text, str) and text.startswith("[ERROR]"):
+        print(text)
+        sys.exit(1)
+
+    print("=== SCHEMA TEXT (first 500 chars) ===")
+    print(text[:500])
+    print("\n=== RELATIONSHIPS ===")
+    for r in rels:
+        print(f"{r['from_table']}.{r['from_column']} -> {r['to_table']}.{r['to_column']}")
+    print("\n=== COLUMN LOOKUP TEST ===")
+    print(correct_column_name("shipment", "shiptoid", lookup))
+    print(correct_column_name("shipment", "ordrid", lookup))
