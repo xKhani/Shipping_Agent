@@ -24,12 +24,11 @@ def quote_reserved_tables(sql: str) -> str:
 
 def sanitize_columns(sql: str, schema_raw, column_lookup):
     valid_cols = {c["name"].lower() for t in schema_raw for c in t["columns"]}
-    allowed_aliases = {"s", "cs", "c", "p"}  # known table aliases
+    allowed_aliases = {"s", "cs", "c", "p"}
     tokens = re.split(r'(\s|,|\(|\))', sql)
     result = []
     in_select = False
     last_token_was_as = False
-    # ✅ added avg, sum, as
     allowed_keywords = {
         "select","from","where","and","or","true","false","count","on",
         "join","group","by","desc","asc","order","limit","avg","sum","as"
@@ -50,7 +49,6 @@ def sanitize_columns(sql: str, schema_raw, column_lookup):
         if '(' in t or ')' in t or t == '*':
             result.append(t); continue
         if re.match(r'^[A-Za-z_][A-Za-z0-9_]*$', t):
-            # Allow known aliases to pass through
             if low in allowed_aliases:
                 result.append(t)
                 continue
@@ -58,7 +56,6 @@ def sanitize_columns(sql: str, schema_raw, column_lookup):
                 print(f"[WARN] Removing hallucinated column: {t}")
                 result.append("NULL" if in_select else "")
                 continue
-            # try correcting case using column lookup
             corrected = t
             for tab in {tdata["name"].lower() for tdata in schema_raw}:
                 c_corr = correct_column_name(tab, low, column_lookup)
@@ -130,38 +127,36 @@ def extract_sql_block(raw: str) -> str:
 def fix_schema_specifics(sql: str) -> str:
     # ✅ Fix city join
     if re.search(r'\bcity\b', sql, flags=re.IGNORECASE) and 'pii' not in sql:
-        sql = re.sub(
-            r'FROM\s+"shipment"\s*(WHERE|GROUP|ORDER|$)',
-            'FROM "shipment" s JOIN "pii" p ON s."shipToId" = p."id" \\1',
-            sql,
-            flags=re.IGNORECASE
-        )
+        if 'JOIN "pii"' not in sql:
+            sql = re.sub(
+                r'FROM\s+"shipment"\s*(WHERE|GROUP|ORDER|$)',
+                'FROM "shipment" s JOIN "pii" p ON s."shipToId" = p."id" \\1',
+                sql,
+                flags=re.IGNORECASE
+            )
         sql = re.sub(r'(\s|,)city(\s|,)', r'\1p."city"\2', sql)
         sql = re.sub(r'GROUP BY\s+city', 'GROUP BY p."city"', sql, flags=re.IGNORECASE)
         sql = re.sub(r'ORDER BY\s+city', 'ORDER BY p."city"', sql, flags=re.IGNORECASE)
 
     # ✅ Fix courier join and references
-    if re.search(r'courierid', sql, flags=re.IGNORECASE):
-        # remove any duplicated joins
+    if re.search(r'courierid', sql, flags=re.IGNORECASE) or 'total_by_courier' in sql.lower():
         sql = re.sub(
-            r'JOIN\s+"courierService".*?JOIN\s+"courier".*?(JOIN\s+"courierService".*?JOIN\s+"courier".*?)',
-            '',
+            r'(JOIN\s+"courierService".*?JOIN\s+"courier".*?)(JOIN\s+"courierService".*?JOIN\s+"courier")',
+            r'\1',
             sql,
             flags=re.IGNORECASE | re.DOTALL
         )
-        sql = re.sub(
-            r'FROM\s+"shipment"',
-            'FROM "shipment" s JOIN "courierService" cs ON s."courierServiceTypeId" = cs."id" '
-            'JOIN "courier" c ON cs."courierId" = c."id"',
-            sql,
-            flags=re.IGNORECASE
-        )
-        sql = re.sub(r'SELECT\s+courierid\s*,\s*COUNT\(\*\)\s+AS\s+total_shipments',
-                     'SELECT c."name", COUNT(*) AS total_shipments', sql, flags=re.IGNORECASE)
-        sql = re.sub(r'SELECT\s+COUNT\(\*\)\s+AS\s+total_by_courier\s*,?\s*courierid?',
-                     'SELECT c."name", COUNT(*) AS total_by_courier', sql, flags=re.IGNORECASE)
-        sql = re.sub(r'GROUP BY\s+courierid', 'GROUP BY c."name"', sql, flags=re.IGNORECASE)
-        sql = re.sub(r'ORDER BY\s+courierid', 'ORDER BY total_by_courier', sql, flags=re.IGNORECASE)
+        if 'JOIN "courierService"' not in sql:
+            sql = re.sub(
+                r'FROM\s+"shipment"',
+                'FROM "shipment" s JOIN "courierService" cs ON s."courierServiceTypeId" = cs."id" '
+                'JOIN "courier" c ON cs."courierId" = c."id"',
+                sql,
+                flags=re.IGNORECASE
+            )
+        sql = re.sub(r'\bcourierid\b', 'c."name"', sql, flags=re.IGNORECASE)
+        sql = re.sub(r'GROUP BY\s+c\."name"', 'GROUP BY c."name"', sql, flags=re.IGNORECASE)
+        sql = re.sub(r'ORDER BY\s+c\."name"', 'ORDER BY total_by_courier', sql, flags=re.IGNORECASE)
 
     # ✅ Fix ORDER BY desc/asc with no column
     sql = re.sub(r'ORDER BY\s+desc', 'ORDER BY total_by_courier DESC', sql, flags=re.IGNORECASE)

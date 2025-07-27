@@ -1,0 +1,268 @@
+[
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "How many shipments have been shipped?",
+    "timestamp": "2025-07-26T20:37:15.827503",
+    "extra": "SELECT count(*) AS total_shipped FROM \"shipment\" where shipped = true"
+  },
+  {
+    "prompt": "How many shipments are from Karachi?",
+    "sql": "SELECT p.\"city\", count(*) AS total_by_city FROM \"shipment\" s JOIN \"pii\" p ON s.\"shipToId\" = p.\"id\" where p.\"city\" = 'Karachi' GROUP BY p.\"city\"",
+    "timestamp": "2025-07-26T20:37:54.254420"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "How many shipments are from Karachi?",
+    "timestamp": "2025-07-26T20:37:54.343125",
+    "extra": "SELECT p.\"city\", count(*) AS total_by_city FROM \"shipment\" s JOIN \"pii\" p ON s.\"shipToId\" = p.\"id\" where p.\"city\" = 'Karachi' GROUP BY p.\"city\""
+  },
+  {
+    "prompt": "How many shipments are from Lahore?",
+    "sql": "SELECT p.\"city\", count(*) AS total_by_city FROM \"shipment\" s JOIN \"pii\" p ON s.\"shipToId\" = p.\"id\" where p.\"city\" = 'Lahore' GROUP BY p.\"city\"",
+    "timestamp": "2025-07-26T20:38:38.777778"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "How many shipments are from Lahore?",
+    "timestamp": "2025-07-26T20:38:38.863121",
+    "extra": "SELECT p.\"city\", count(*) AS total_by_city FROM \"shipment\" s JOIN \"pii\" p ON s.\"shipToId\" = p.\"id\" where p.\"city\" = 'Lahore' GROUP BY p.\"city\""
+  },
+  {
+    "prompt": "How many shipments were created after 1st July 2025?",
+    "sql": "SELECT count(*) AS shipments_after_july FROM \"shipment\" where TRUE >= '2025-07-01'",
+    "timestamp": "2025-07-26T20:39:13.986957"
+  },
+  {
+    "prompt": "Show total shipments grouped by courier.",
+    "sql": "SELECT c.\"name\", COUNT(*) AS total_by_courier FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\" where \"shipped\" = TRUE GROUP BY c.\"name\"",
+    "timestamp": "2025-07-26T20:40:05.635424"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "Show total shipments grouped by courier.",
+    "timestamp": "2025-07-26T20:40:05.727061",
+    "extra": "SELECT c.\"name\", COUNT(*) AS total_by_courier FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\" where \"shipped\" = TRUE GROUP BY c.\"name\""
+  },
+  {
+    "prompt": "Which Courier has the highest shipment ?",
+    "sql": "SELECT courierid, count(*) AS total_shipments FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\" where \"shipped\" = TRUE GROUP BY c.\"name\" TRUE BY TRUE desc TRUE 1",
+    "timestamp": "2025-07-26T20:40:45.695907"
+  },
+  {
+    "prompt": "What is the total shipping cost of all shipments?",
+    "sql": "SELECT count(*) AS total_shipments FROM \"shipment\"",
+    "timestamp": "2025-07-26T20:43:13.045686"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "What is the total shipping cost of all shipments?",
+    "timestamp": "2025-07-26T20:43:13.135094",
+    "extra": "SELECT count(*) AS total_shipments FROM \"shipment\""
+  },
+  {
+    "prompt": "How many shipments have been shipped?",
+    "sql": "SELECT count(*) AS total_shipped FROM \"shipment\" where shipped = true",
+    "timestamp": "2025-07-26T21:11:15.029056"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "How many shipments have been shipped?",
+    "timestamp": "2025-07-26T21:11:15.136133",
+    "extra": "SELECT count(*) AS total_shipped FROM \"shipment\" where shipped = true"
+  },
+  {
+    "prompt": "How many total shipments are in the system?",
+    "sql": "SELECT count(*) AS total_shipments FROM \"shipment\"",
+    "timestamp": "2025-07-26T21:15:13.225211"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "How many total shipments are in the system?",
+    "timestamp": "2025-07-26T21:15:13.304229",
+    "extra": "SELECT count(*) AS total_shipments FROM \"shipment\""
+  },
+  {
+    "prompt": "How many shipments have been shipped?",
+    "sql": "SELECT count(*) AS total_shipped FROM \"shipment\" where shipped = true",
+    "timestamp": "2025-07-26T21:15:53.557752"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "How many shipments have been shipped?",
+    "timestamp": "2025-07-26T21:15:53.728358",
+    "extra": "SELECT count(*) AS total_shipped FROM \"shipment\" where shipped = true"
+  },
+  {
+    "prompt": "How many shipments have not been shipped yet?",
+    "sql": "SELECT count(*) AS total_not_shipped FROM \"shipment\" where shipped = false",
+    "timestamp": "2025-07-26T21:16:37.542715"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "How many shipments have not been shipped yet?",
+    "timestamp": "2025-07-26T21:16:37.619869",
+    "extra": "SELECT count(*) AS total_not_shipped FROM \"shipment\" where shipped = false"
+  },
+  {
+    "prompt": "How many shipments are from Karachi?",
+    "sql": "SELECT p.\"city\", count(*) AS total_by_city FROM \"shipment\" s JOIN \"pii\" p ON s.\"shipToId\" = p.\"id\" where p.\"city\" = 'Karachi' GROUP BY p.\"city\"",
+    "timestamp": "2025-07-26T21:17:25.939406"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "How many shipments are from Karachi?",
+    "timestamp": "2025-07-26T21:17:26.025165",
+    "extra": "SELECT p.\"city\", count(*) AS total_by_city FROM \"shipment\" s JOIN \"pii\" p ON s.\"shipToId\" = p.\"id\" where p.\"city\" = 'Karachi' GROUP BY p.\"city\""
+  },
+  {
+    "prompt": "List the total shipments grouped by city.",
+    "sql": "SELECT p.\"city\", count(*) as total_by_city FROM \"shipment\" s JOIN \"pii\" p ON s.\"shipToId\" = p.\"id\" GROUP BY p.\"city\"",
+    "timestamp": "2025-07-26T21:18:15.070458"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "List the total shipments grouped by city.",
+    "timestamp": "2025-07-26T21:18:15.152888",
+    "extra": "SELECT p.\"city\", count(*) as total_by_city FROM \"shipment\" s JOIN \"pii\" p ON s.\"shipToId\" = p.\"id\" GROUP BY p.\"city\""
+  },
+  {
+    "prompt": "Show total shipments grouped by courier.",
+    "sql": "SELECT c.\"name\", COUNT(*) AS total_by_courier, courierid FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\" where shipped = true GROUP BY c.\"name\"",
+    "timestamp": "2025-07-26T21:19:18.302731"
+  },
+  {
+    "prompt": "Which courier has the highest number of shipments?",
+    "sql": "SELECT courierid, count(*) as total_by_courier FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\" where shipped = true GROUP BY c.\"name\" order BY  desc limit 1",
+    "timestamp": "2025-07-26T21:20:25.239199"
+  },
+  {
+    "prompt": "How many shipments were created after 1st July 2025?",
+    "sql": "SELECT count(*) AS shipments_after_july FROM \"shipment\" where  >= '2025-07-01'",
+    "timestamp": "2025-07-26T21:21:11.815438"
+  },
+  {
+    "prompt": "What is Average Shipping cost of a shipment?",
+    "sql": "SELECT count(*) AS total_shipments FROM \"shipment\"",
+    "timestamp": "2025-07-26T21:22:44.028885"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "What is Average Shipping cost of a shipment?",
+    "timestamp": "2025-07-26T21:22:44.111722",
+    "extra": "SELECT count(*) AS total_shipments FROM \"shipment\""
+  },
+  {
+    "prompt": "How many total shipments are in the system?",
+    "sql": "SELECT count(*) AS total_shipments FROM \"shipment\"",
+    "timestamp": "2025-07-27T03:09:40.267240"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "How many total shipments are in the system?",
+    "timestamp": "2025-07-27T03:09:40.363582",
+    "extra": "SELECT count(*) AS total_shipments FROM \"shipment\""
+  },
+  {
+    "prompt": "How many shipments are from Lahore?",
+    "sql": "SELECT p.\"city\", count(*) AS total_by_city FROM \"shipment\" s JOIN \"pii\" p ON s.\"shipToId\" = p.\"id\" where p.\"city\" = 'Lahore' GROUP BY p.\"city\"",
+    "timestamp": "2025-07-27T03:10:17.712970"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "How many shipments are from Lahore?",
+    "timestamp": "2025-07-27T03:10:17.817604",
+    "extra": "SELECT p.\"city\", count(*) AS total_by_city FROM \"shipment\" s JOIN \"pii\" p ON s.\"shipToId\" = p.\"id\" where p.\"city\" = 'Lahore' GROUP BY p.\"city\""
+  },
+  {
+    "prompt": "Show total shipments grouped by courier.",
+    "sql": "SELECT c.\"name\", COUNT(*) AS total_by_courier, courierid FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\" where shipped = true GROUP BY c.\"name\"",
+    "timestamp": "2025-07-27T03:11:27.034803"
+  },
+  {
+    "prompt": "How many shipments were created after 1st July 2025?",
+    "sql": "SELECT count(*) AS shipments_after_july FROM \"shipment\" where  >= '2025-07-01'",
+    "timestamp": "2025-07-27T03:12:25.784962"
+  },
+  {
+    "prompt": "Show the top 3 couriers by shipment count.",
+    "sql": "SELECT c.\"name\", COUNT(*) AS total_by_courier, c.\"name\" FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\"  join \"courierService\"  ON s.\"courierServiceId\" = cs.\"id\" join \"courier\"  ON cs.\"courierId\" = c.\"id\" group BY c.\"name\" order BY  desc limit 3",
+    "timestamp": "2025-07-27T03:13:49.715502"
+  },
+  {
+    "prompt": "How many total shipments are in the system?",
+    "sql": "SELECT count(*) AS total_shipments FROM \"shipment\"",
+    "timestamp": "2025-07-27T10:32:05.817693"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "How many total shipments are in the system?",
+    "timestamp": "2025-07-27T10:32:05.904330",
+    "extra": "SELECT count(*) AS total_shipments FROM \"shipment\""
+  },
+  {
+    "prompt": "How many shipments were created after 1st July 2025?",
+    "sql": "SELECT count(*) AS shipments_after_july FROM \"shipment\" where  >= '2025-07-01'",
+    "timestamp": "2025-07-27T10:32:32.220179"
+  },
+  {
+    "prompt": "How many shipments were delivered today?",
+    "sql": "SELECT count(*) AS total_delivered_today FROM \"shipment\" where shipped = true AND  = ()",
+    "timestamp": "2025-07-27T10:33:34.469130"
+  },
+  {
+    "prompt": "What is the  average cost of a shipment?",
+    "sql": "SELECT NULL(cost) AS average_shipping_cost FROM \"shipment\"",
+    "timestamp": "2025-07-27T10:35:21.046467"
+  },
+  {
+    "prompt": "What is the total cost of all shipments?",
+    "sql": "SELECT NULL(cost) AS total_shipping_cost FROM \"shipment\"",
+    "timestamp": "2025-07-27T10:36:38.656896"
+  },
+  {
+    "prompt": "Show total shipments grouped by courier.",
+    "sql": "SELECT c.\"name\", COUNT(*) AS total_by_courier FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\" where shipped = true GROUP BY c.\"name\"",
+    "timestamp": "2025-07-27T10:37:37.975658"
+  },
+  {
+    "prompt": "D:\\Shipping Agent\\agent\\..\\tools\\sql_history.json",
+    "sql": "Show total shipments grouped by courier.",
+    "timestamp": "2025-07-27T10:37:38.081042",
+    "extra": "SELECT c.\"name\", COUNT(*) AS total_by_courier FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\" where shipped = true GROUP BY c.\"name\""
+  },
+  {
+    "prompt": "Show the top 3 couriers by shipment count.",
+    "sql": "SELECT c.\"name\", count(*) AS total_by_courier FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\" c ON cs.\"courierId\" = c.\"id\" where s.shipped = true group BY c.\"name\" ORDER BY total_by_courier DESC limit 3",
+    "timestamp": "2025-07-27T10:38:38.545328"
+  },
+  {
+    "prompt": "Show total shipments grouped by courier.",
+    "sql": "SELECT c.\"name\", count(*) AS total_by_courier FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\" s join \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" join \"courier\" c ON cs.\"courierId\" = c.\"id\" group BY c.\"name\"",
+    "timestamp": "2025-07-27T10:58:27.054636"
+  },
+  {
+    "prompt": "Show the top 3 couriers by shipment count.",
+    "sql": "SELECT c.\"name\", count(*) AS total_by_courier FROM \"shipment\" s JOIN \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" JOIN \"courier\" c ON cs.\"courierId\" = c.\"id\" s join \"courierService\" cs ON s.\"courierServiceTypeId\" = cs.\"id\" join \"courier\" c ON cs.\"courierId\" = c.\"id\" where s.shipped = TRUE group BY c.\"name\" ORDER BY total_by_courier DESC limit 3",
+    "timestamp": "2025-07-27T10:59:35.875997"
+  },
+  {
+    "prompt": "How many shipments were created after 1st July 2025?",
+    "sql": "SELECT count(*) AS shipments_after_july FROM \"shipment\" where  >= '2025-07-01'",
+    "timestamp": "2025-07-27T11:00:30.780340"
+  },
+  {
+    "prompt": "How many shipments were delivered today?",
+    "sql": "SELECT count(*) AS total_delivered_today FROM \"shipment\" where shipped = true AND  = ",
+    "timestamp": "2025-07-27T11:01:27.276315"
+  },
+  {
+    "prompt": "What is the average cost of a shipment?",
+    "sql": "SELECT avg(cost) AS average_shipping_cost FROM \"shipment\"",
+    "timestamp": "2025-07-27T11:01:48.326022"
+  },
+  {
+    "prompt": "What is the total cost of all shipments?",
+    "sql": "SELECT sum(cost) AS total_shipping_cost FROM \"shipment\"",
+    "timestamp": "2025-07-27T11:02:46.896917"
+  }
+]

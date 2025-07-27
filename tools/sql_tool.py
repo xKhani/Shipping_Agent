@@ -3,7 +3,8 @@ import psycopg2
 from psycopg2 import sql as pg_sql
 import os
 import re
-import json # <--- Add this import
+import json
+from decimal import Decimal # <--- IMPORTANT: Add this import!
 
 # Database connection details from environment variables or config
 DB_NAME = os.getenv("DB_NAME", "shipping_agent_db")
@@ -36,7 +37,6 @@ def execute_sql_query(sql_query: str) -> tuple:
         if not is_safe_sql(sql_query):
             error_message = "Unsafe SQL query detected: Only SELECT statements are allowed."
             print(f"[ERROR] {error_message}\nQuery: {sql_query}")
-            # Ensure error is returned as a JSON string
             return False, json.dumps({"error": error_message})
 
         # 1. SQL Validation using EXPLAIN
@@ -60,7 +60,6 @@ def execute_sql_query(sql_query: str) -> tuple:
             conn.rollback() # Rollback any partial transaction from EXPLAIN
             error_message = f"SQL Validation Error (EXPLAIN failed): {e}\nQuery: {sql_query}"
             print(f"[ERROR] {error_message}")
-            # Ensure error is returned as a JSON string
             return False, json.dumps({"error": error_message})
 
         # 2. Execute the actual query if EXPLAIN passed
@@ -69,15 +68,29 @@ def execute_sql_query(sql_query: str) -> tuple:
         # For SELECT queries, fetch results
         if sql_query.strip().lower().startswith("select"):
             columns = [desc[0] for desc in cur.description]
-            results = cur.fetchall()
+            raw_results = cur.fetchall() # Fetched raw results (might contain Decimal)
             conn.commit() # Commit any changes if SELECT implicitly started a transaction (good practice)
             print("[DEBUG] SQL query executed successfully.")
-            # Return data as a JSON string
-            return True, json.dumps({"columns": columns, "data": results})
+
+            # --- START OF FIX ---
+            # Process results to handle Decimal types
+            processed_results = []
+            for row_tuple in raw_results:
+                # Convert tuple to list for mutable processing, or directly create a dict
+                processed_row = []
+                for item in row_tuple:
+                    if isinstance(item, Decimal):
+                        processed_row.append(float(item)) # Convert Decimal to float
+                    else:
+                        processed_row.append(item)
+                processed_results.append(processed_row)
+            # --- END OF FIX ---
+
+            # Return data as a JSON string using the processed_results
+            return True, json.dumps({"columns": columns, "data": processed_results})
         else:
             conn.commit() # Commit for DML statements (INSERT, UPDATE, DELETE)
             print("[DEBUG] Non-SELECT SQL query executed successfully.")
-            # Return success message as a JSON string
             return True, json.dumps({"status": "success", "message": f"Command executed successfully. Rows affected: {cur.rowcount}"})
 
     except psycopg2.Error as e:
@@ -85,12 +98,10 @@ def execute_sql_query(sql_query: str) -> tuple:
             conn.rollback() # Rollback any changes on error
         error_message = f"Database error during SQL execution: {sql_query}\nDetails: {e}"
         print(f"[ERROR] {error_message}")
-        # Ensure error is returned as a JSON string
         return False, json.dumps({"error": error_message})
     except Exception as e:
         error_message = f"An unexpected Python error occurred during SQL execution: {e}"
         print(f"[ERROR] {error_message}")
-        # Ensure error is returned as a JSON string
         return False, json.dumps({"error": error_message})
     finally:
         if cur:
@@ -101,11 +112,11 @@ def execute_sql_query(sql_query: str) -> tuple:
 if __name__ == "__main__":
     # Example usage:
     print("--- Testing valid SELECT query ---")
-    success, result = execute_sql_query('SELECT "id", "name" FROM courier LIMIT 2;')
+    success, result = execute_sql_query('SELECT "id", "name", "cost" FROM shipment LIMIT 2;') # Added cost for testing
     if success:
-        print("Query Result:", result) # Now will print JSON string
+        print("Query Result:", result)
     else:
-        print("Query Failed:", result) # Now will print JSON string
+        print("Query Failed:", result)
 
     print("\n--- Testing invalid query (hallucinated table - should fail EXPLAIN) ---")
     success, result = execute_sql_query('SELECT id FROM non_existent_table;')
