@@ -9,8 +9,16 @@ import plotly.express as px
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from config import DB_CONFIG
 
-st.set_page_config(page_title="ShipNest Dashboard", layout="wide")
+DB_CONFIG = {
+    "host":"localhost",
+    "port": 5432,
+    "dbname": "shipnest_schema",
+    "user": "postgres", # <-- Load from .env
+    "password": "admin" # <-- Load from .env
+}
 
+
+st.set_page_config(page_title="ShipNest Dashboard", layout="wide")
 # === Fetch Data ===
 @st.cache_data
 def fetch_data():
