@@ -118,6 +118,33 @@ def extract_sql_from_response(response: str) -> str:
         return response
     
     return "" # Return empty if no SQL is found
+def quote_identifiers(sql: str) -> str:
+    """
+    Properly quote table and column identifiers using the schema knowledge.
+    Handles dot-access like shipment.shipToId → "shipment"."shipToId".
+    """
+    _, _, tables_data, column_lookup = fetch_schema_text()
+    known_tables = {t["name"] for t in tables_data}
+    known_columns = set(column_lookup.keys())
+
+    # Quote dot-accessed identifiers
+    def replacer(match):
+        table, col = match.group(1), match.group(2)
+        return f'"{table}"."{col}"'
+
+    # Quote dot references: table.column
+    sql = re.sub(r'\b([a-zA-Z_][\w]*)\.([a-zA-Z_][\w]*)\b', replacer, sql)
+
+    # Quote any standalone known table names (if not already quoted)
+    for table in known_tables:
+        sql = re.sub(rf'(?<!")\b{table}\b(?!")', f'"{table}"', sql)
+
+    # Quote any standalone column names (if not already quoted)
+    for col in known_columns:
+        sql = re.sub(rf'(?<!")\b{col}\b(?!")', f'"{col}"', sql)
+
+    return sql
+
 
 def generate_and_validate_sql(user_prompt: str) -> str:
     """
@@ -147,7 +174,8 @@ You are an expert PostgreSQL data analyst. Your sole purpose is to write correct
 3.  **COLUMN/TABLE QUOTING:** ALWAYS use double quotes around table and column names (e.g., "shipment", "createdAt"). NEVER use backticks (`).
 4.  **DATE/TIME OUTPUT:** When selecting a date or timestamp column (like "createdAt"), cast it to a string using `::TEXT` to ensure it's readable. Example: `SELECT "createdAt"::TEXT FROM "order"`.
 5.  **NON-EXISTENT COLUMNS:** The columns `shippedAt` and `deliveredAt` DO NOT EXIST. Do not hallucinate them. Use the rule #1 for shipment dates.
-6.  **CLAUSE ORDER:** Always respect the SQL clause order: SELECT -> FROM -> JOIN -> WHERE -> GROUP BY -> ORDER BY -> LIMIT.
+6.  **GROUPING BY COURIER:** When asked to group by courier, always use `"order"."shippingCourier"`. Do NOT join to `"courierService"` or `"courier"` unless explicitly asked for details about the courier table.
+7.  **CLAUSE ORDER:** Always respect the SQL clause order: SELECT -> FROM -> JOIN -> WHERE -> GROUP BY -> ORDER BY -> LIMIT.
 
 """
 
@@ -190,7 +218,7 @@ You MUST follow the rules provided in the system prompt. Pay special attention t
         """
         
         raw_response = _call_llm(system_prompt, current_user_prompt)
-        sql_candidate = extract_sql_from_response(raw_response)
+        sql_candidate = quote_identifiers(extract_sql_from_response(raw_response))
     
         if not sql_candidate:
             print("[WARN] No SQL block found in the LLM response.")
