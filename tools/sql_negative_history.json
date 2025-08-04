@@ -64,5 +64,11 @@
     "bad_sql": "SELECT\n  COUNT(s.\"id\")\nFROM \"shipment\" s\nJOIN \"order\" o\n  ON s.\"orderId\" = o.\"id\"\nJOIN \"pii\" p\n  ON s.\"shipToId\" = p.\"id\"\nWHERE\n  s.\"shippingCourier\" = 'TCS' AND p.\"city\" = 'Lahore' AND s.\"shipped\" = TRUE",
     "reason": "column s.shippingCourier does not exist",
     "timestamp": "2025-08-02T04:04:19.857882"
+  },
+  {
+    "prompt": "show me the total number of shipments grouped\u00a0by\u00a0courier",
+    "bad_sql": "SELECT \n    \"order\".shippingCourier, \n    COUNT(*) AS total_shipments\nFROM \n    \"shipment\"\nJOIN \n    \"order\" ON \"shipment\".orderId = \"order\".id\nGROUP BY \n    \"order\".shippingCourier",
+    "reason": "column shipment.orderid does not exist",
+    "timestamp": "2025-08-02T16:21:27.512430"
   }
 ]

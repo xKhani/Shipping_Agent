@@ -1,0 +1,42 @@
+/* Additional custom styles can be added here */
+/* The main styles are already included in the HTML template */
+
+/* Custom scrollbar for webkit browsers */
+.chat-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Responsive design for mobile devices */
+@media (max-width: 768px) {
+    .container {
+        height: 100vh;
+        border-radius: 0;
+        margin: 0;
+    }
+    
+    .message-content {
+        max-width: 85%;
+    }
+    
+    .example-queries {
+        flex-direction: column;
+    }
+    
+    .example-query {
+        text-align: center;
+    }
+} 

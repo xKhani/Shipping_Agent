@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShipNest Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            margin: 0;
+        }
+
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            height: 95vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dashboard-content {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .filters {
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-bottom: 1px solid #e1e5e9;
+            flex-shrink: 0;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .filter-group select, .filter-group input {
+            padding: 8px 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-group select:focus, .filter-group input:focus {
+            border-color: #667eea;
+        }
+
+        .clear-filters {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        .clear-filters:hover {
+            background: #c82333;
+        }
+
+        .kpi-section {
+            padding: 15px 30px;
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .charts-section {
+            padding: 15px 30px;
+            background: #f8f9fa;
+            flex: 1;
+            min-height: 600px;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .chart-grid-2x3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .chart-canvas-container {
+            flex: 1;
+            position: relative;
+            min-height: 200px;
+        }
+
+
+
+        /* Floating Chatbot */
+        .chatbot-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .chatbot-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .chatbot-toggle i {
+            color: white;
+            font-size: 24px;
+        }
+
+        .chatbot-window {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chatbot-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chatbot-header h3 {
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .close-chatbot {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chatbot-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .chatbot-message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .chatbot-message.user {
+            justify-content: flex-end;
+        }
+
+        .chatbot-message-content {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            word-wrap: break-word;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        .chatbot-message.user .chatbot-message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .chatbot-message.assistant .chatbot-message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e1e5e9;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chatbot-input {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        .chatbot-input-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chatbot-input-field {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .chatbot-input-field:focus {
+            border-color: #667eea;
+        }
+
+        .chatbot-send-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+
+        .chatbot-send-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .chatbot-send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                height: 100vh;
+                border-radius: 0;
+                margin: 0;
+            }
+            
+            .chart-grid, .chart-grid-2x3 {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .chatbot-window {
+                width: 90vw;
+                right: 5vw;
+                left: 5vw;
+            }
+            
+            .chatbot-toggle {
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+            <div class="dashboard-container">
+            <div class="header">
+                <h1> ShipNest Analytics Dashboard</h1>
+                <p>Comprehensive shipping analytics and insights for Pakistani logistics</p>
+            </div>
+
+            <div class="dashboard-content">
+                <div class="filters">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>Start Date</label>
+                            <input type="date" id="startDate">
+                        </div>
+                        <div class="filter-group">
+                            <label>End Date</label>
+                            <input type="date" id="endDate">
+                        </div>
+                        <div class="filter-group">
+                            <label>Courier</label>
+                            <select id="courierFilter">
+                                <option value="">All Couriers</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>City</label>
+                            <select id="cityFilter">
+                                <option value="">All Cities</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <select id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="true">Delivered</option>
+                                <option value="false">Pending</option>
+                            </select>
+                        </div>
+                        <button class="clear-filters" onclick="clearFilters()">🔄 Clear Filters</button>
+                    </div>
+                </div>
+
+                <div class="kpi-section">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-value" id="totalShipments">0</div>
+                            <div class="kpi-label">Total Shipments</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-value" id="deliveredCount">0</div>
+                            <div class="kpi-label">Delivered</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-value" id="pendingCount">0</div>
+                            <div class="kpi-label">Pending</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-value" id="totalCost">₨0</div>
+                            <div class="kpi-label">Total Cost</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-value" id="avgCost">₨0</div>
+                            <div class="kpi-label">Average Cost</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-value" id="deliveryRate">0%</div>
+                            <div class="kpi-label">Delivery Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-section">
+                    <div class="chart-grid-2x3">
+                        <div class="chart-container">
+                            <div class="chart-title">📍 Shipments by City</div>
+                            <div class="chart-canvas-container">
+                                <canvas id="cityChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">🚚 Courier Distribution</div>
+                            <div class="chart-canvas-container">
+                                <canvas id="courierChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">🏛️ Shipments by Province</div>
+                            <div class="chart-canvas-container">
+                                <canvas id="provinceChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">💰 Cost Trend Over Time</div>
+                            <div class="chart-canvas-container">
+                                <canvas id="costTrendChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">📊 Monthly Shipment Volume</div>
+                            <div class="chart-canvas-container">
+                                <canvas id="monthlyChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-title">📅 Day of Week Distribution</div>
+                            <div class="chart-canvas-container">
+                                <canvas id="dayOfWeekChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- Floating Chatbot Toggle -->
+    <div class="chatbot-toggle" onclick="toggleChatbot()">
+        <i>💬</i>
+    </div>
+
+    <!-- Floating Chatbot Window -->
+    <div class="chatbot-window" id="chatbotWindow">
+        <div class="chatbot-header">
+            <h3> Shipping Assistant</h3>
+            <button class="close-chatbot" onclick="toggleChatbot()">×</button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chatbot-message assistant">
+                <div class="chatbot-message-content">
+                    Hi! I'm your AI shipping assistant. Ask me anything about your shipping data or general logistics questions!
+                </div>
+            </div>
+        </div>
+        <div class="chatbot-input">
+            <form class="chatbot-input-form" id="chatbotForm">
+                <input 
+                    type="text" 
+                    class="chatbot-input-field" 
+                    id="chatbotInput" 
+                    placeholder="Ask a question..."
+                    autocomplete="off"
+                >
+                <button type="submit" class="chatbot-send-button" id="chatbotSendButton">
+                    Send
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let allData = [];
+        let filteredData = [];
+        let cityChart, courierChart, costTrendChart, monthlyChart, provinceChart, dayOfWeekChart;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            setupEventListeners();
+        });
+
+        // Load data from backend
+        async function loadData() {
+            try {
+                const response = await fetch('/api/dashboard-data');
+                const data = await response.json();
+                allData = data;
+                filteredData = data;
+                
+                // Set date range
+                const dates = data.map(item => new Date(item.shipment_date));
+                const minDate = new Date(Math.min(...dates));
+                const maxDate = new Date(Math.max(...dates));
+                
+                document.getElementById('startDate').value = minDate.toISOString().split('T')[0];
+                document.getElementById('endDate').value = maxDate.toISOString().split('T')[0];
+                
+                // Populate filters
+                populateFilters(data);
+                
+                // Update dashboard
+                updateDashboard();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        // Populate filter options
+        function populateFilters(data) {
+            const couriers = [...new Set(data.map(item => item.shippingCourier))];
+            const cities = [...new Set(data.map(item => item.destination_city))];
+            
+            const courierSelect = document.getElementById('courierFilter');
+            const citySelect = document.getElementById('cityFilter');
+            
+            couriers.forEach(courier => {
+                const option = document.createElement('option');
+                option.value = courier;
+                option.textContent = courier;
+                courierSelect.appendChild(option);
+            });
+            
+            cities.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city;
+                option.textContent = city;
+                citySelect.appendChild(option);
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('startDate').addEventListener('change', filterData);
+            document.getElementById('endDate').addEventListener('change', filterData);
+            document.getElementById('courierFilter').addEventListener('change', filterData);
+            document.getElementById('cityFilter').addEventListener('change', filterData);
+            document.getElementById('statusFilter').addEventListener('change', filterData);
+            
+            // Chatbot form
+            document.getElementById('chatbotForm').addEventListener('submit', handleChatbotSubmit);
+        }
+
+        // Filter data based on selected criteria
+        function filterData() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const courier = document.getElementById('courierFilter').value;
+            const city = document.getElementById('cityFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            
+            filteredData = allData.filter(item => {
+                const itemDate = new Date(item.shipment_date);
+                const start = startDate ? new Date(startDate) : new Date(0);
+                const end = endDate ? new Date(endDate) : new Date();
+                
+                const dateMatch = itemDate >= start && itemDate <= end;
+                const courierMatch = !courier || item.shippingCourier === courier;
+                const cityMatch = !city || item.destination_city === city;
+                const statusMatch = status === '' || item.shipped.toString() === status;
+                
+                return dateMatch && courierMatch && cityMatch && statusMatch;
+            });
+            
+            updateDashboard();
+        }
+
+        // Clear all filters
+        function clearFilters() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('courierFilter').value = '';
+            document.getElementById('cityFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            
+            filteredData = allData;
+            updateDashboard();
+        }
+
+        // Update dashboard with filtered data
+        function updateDashboard() {
+            updateKPIs();
+            updateCharts();
+        }
+
+        // Update KPI cards
+        function updateKPIs() {
+            const totalShipments = filteredData.length;
+            const deliveredCount = filteredData.filter(item => item.shipped).length;
+            const pendingCount = totalShipments - deliveredCount;
+            const totalCost = filteredData.reduce((sum, item) => sum + parseFloat(item.cost), 0);
+            const avgCost = totalShipments > 0 ? totalCost / totalShipments : 0;
+            const deliveryRate = totalShipments > 0 ? (deliveredCount / totalShipments * 100) : 0;
+            
+            document.getElementById('totalShipments').textContent = totalShipments.toLocaleString();
+            document.getElementById('deliveredCount').textContent = deliveredCount.toLocaleString();
+            document.getElementById('pendingCount').textContent = pendingCount.toLocaleString();
+            document.getElementById('totalCost').textContent = `₨${totalCost.toLocaleString()}`;
+            document.getElementById('avgCost').textContent = `₨${avgCost.toLocaleString()}`;
+            document.getElementById('deliveryRate').textContent = `${deliveryRate.toFixed(1)}%`;
+        }
+
+        // Update charts
+        function updateCharts() {
+            updateCityChart();
+            updateCourierChart();
+            updateProvinceChart();
+            updateCostTrendChart();
+            updateMonthlyChart();
+            updateDayOfWeekChart();
+        }
+
+        // Update city chart
+        function updateCityChart() {
+            const cityData = {};
+            filteredData.forEach(item => {
+                cityData[item.destination_city] = (cityData[item.destination_city] || 0) + 1;
+            });
+            
+            const ctx = document.getElementById('cityChart').getContext('2d');
+            if (cityChart) cityChart.destroy();
+            
+            cityChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(cityData),
+                    datasets: [{
+                        label: 'Shipments',
+                        data: Object.values(cityData),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update courier chart
+        function updateCourierChart() {
+            const courierData = {};
+            filteredData.forEach(item => {
+                courierData[item.shippingCourier] = (courierData[item.shippingCourier] || 0) + 1;
+            });
+            
+            const ctx = document.getElementById('courierChart').getContext('2d');
+            if (courierChart) courierChart.destroy();
+            
+            courierChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(courierData),
+                    datasets: [{
+                        data: Object.values(courierData),
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(118, 75, 162, 0.8)',
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 8,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update province chart
+        function updateProvinceChart() {
+            const provinceData = {};
+            filteredData.forEach(item => {
+                provinceData[item.destination_province] = (provinceData[item.destination_province] || 0) + 1;
+            });
+            
+            const ctx = document.getElementById('provinceChart').getContext('2d');
+            if (provinceChart) provinceChart.destroy();
+            
+            provinceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(provinceData),
+                    datasets: [{
+                        label: 'Shipments',
+                        data: Object.values(provinceData),
+                        backgroundColor: 'rgba(255, 159, 64, 0.8)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update cost trend chart
+        function updateCostTrendChart() {
+            const costData = {};
+            filteredData.forEach(item => {
+                const date = item.shipment_date.split('T')[0];
+                costData[date] = (costData[date] || 0) + parseFloat(item.cost);
+            });
+            
+            const sortedDates = Object.keys(costData).sort();
+            
+            const ctx = document.getElementById('costTrendChart').getContext('2d');
+            if (costTrendChart) costTrendChart.destroy();
+            
+            costTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{
+                        label: 'Total Cost (PKR)',
+                        data: sortedDates.map(date => costData[date]),
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update monthly chart
+        function updateMonthlyChart() {
+            const monthlyData = {};
+            filteredData.forEach(item => {
+                const date = new Date(item.shipment_date);
+                const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                monthlyData[monthYear] = (monthlyData[monthYear] || 0) + 1;
+            });
+            
+            const sortedMonths = Object.keys(monthlyData).sort();
+            
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            if (monthlyChart) monthlyChart.destroy();
+            
+            monthlyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedMonths,
+                    datasets: [{
+                        label: 'Shipments',
+                        data: sortedMonths.map(month => monthlyData[month]),
+                        backgroundColor: 'rgba(118, 75, 162, 0.8)',
+                        borderColor: 'rgba(118, 75, 162, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update day of week chart
+        function updateDayOfWeekChart() {
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayData = {};
+            
+            // Initialize all days with 0
+            dayNames.forEach(day => {
+                dayData[day] = 0;
+            });
+            
+            filteredData.forEach(item => {
+                const dayName = dayNames[item.day_of_week];
+                dayData[dayName] = (dayData[dayName] || 0) + 1;
+            });
+            
+            const ctx = document.getElementById('dayOfWeekChart').getContext('2d');
+            if (dayOfWeekChart) dayOfWeekChart.destroy();
+            
+            dayOfWeekChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dayNames,
+                    datasets: [{
+                        label: 'Shipments',
+                        data: dayNames.map(day => dayData[day]),
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chatbot functionality
+        function toggleChatbot() {
+            const chatbot = document.getElementById('chatbotWindow');
+            chatbot.style.display = chatbot.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function addChatbotMessage(content, isUser = false) {
+            const messagesContainer = document.getElementById('chatbotMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chatbot-message ${isUser ? 'user' : 'assistant'}`;
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'chatbot-message-content';
+            
+            if (isUser) {
+                messageContent.textContent = content;
+            } else {
+                // Convert markdown-like formatting to HTML
+                let formattedContent = content
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/```sql\n([\s\S]*?)\n```/g, '<pre><code class="sql">$1</code></pre>')
+                    .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+                    .replace(/\n/g, '<br>');
+                
+                messageContent.innerHTML = formattedContent;
+            }
+            
+            messageDiv.appendChild(messageContent);
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showChatbotLoading() {
+            const messagesContainer = document.getElementById('chatbotMessages');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'chatbot-message assistant';
+            loadingDiv.id = 'chatbotLoadingMessage';
+            
+            const loadingContent = document.createElement('div');
+            loadingContent.className = 'chatbot-message-content loading';
+            loadingContent.innerHTML = '<div class="spinner"></div> Thinking...';
+            
+            loadingDiv.appendChild(loadingContent);
+            messagesContainer.appendChild(loadingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideChatbotLoading() {
+            const loadingMessage = document.getElementById('chatbotLoadingMessage');
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+
+        async function handleChatbotSubmit(e) {
+            e.preventDefault();
+            
+            const input = document.getElementById('chatbotInput');
+            const query = input.value.trim();
+            if (!query) return;
+
+            // Add user message
+            addChatbotMessage(query, true);
+            
+            // Clear input
+            input.value = '';
+            
+            // Disable button during request
+            const sendButton = document.getElementById('chatbotSendButton');
+            sendButton.disabled = true;
+            sendButton.textContent = 'Sending...';
+            
+            try {
+                showChatbotLoading();
+                
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: query })
+                });
+
+                const data = await response.json();
+                
+                hideChatbotLoading();
+
+                if (response.ok) {
+                    addChatbotMessage(data.response);
+                } else {
+                    addChatbotMessage(`❌ Error: ${data.error || 'Unknown error occurred'}`);
+                }
+            } catch (error) {
+                hideChatbotLoading();
+                addChatbotMessage(`❌ Connection error: ${error.message}`);
+            } finally {
+                // Re-enable button
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+            }
+        }
+    </script>
+</body>
+</html> 
