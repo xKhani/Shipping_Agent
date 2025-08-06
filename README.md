@@ -209,17 +209,6 @@ Enable debug mode by setting `debug=True` in `app.py` for detailed error message
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
-
-For support and questions:
-- Check the troubleshooting section
-- Review the test files for usage examples
-- Examine the SQL history for query patterns
-
 ---
 
 **Note**: This system requires a running PostgreSQL database and Ollama instance with the specified models for full functionality.
