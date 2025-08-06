@@ -8,7 +8,7 @@ A sophisticated AI-powered shipping analytics system that combines natural langu
 - **Text-to-SQL Generation**: Converts natural language to SQL queries using local LLM
 - **Self-Learning System**: Improves SQL generation by learning from past queries
 - **Real-time Database Integration**: Direct PostgreSQL connectivity with dynamic schema inspection
-- **Modern Web Interface**: Beautiful, responsive chat interface
+- **Modern Web Interface**: Beautiful, responsive dashboard with analytics and chatbot
 - **Error Handling & Recovery**: Robust error handling with self-correction capabilities
 
 ## 🏗️ Architecture
@@ -95,9 +95,9 @@ PostgreSQL Database
    Open your browser and go to: `http://localhost:5000`
 
 3. **API Endpoints**
-   - `GET /` - Web interface
+   - `GET /` - Dashboard interface
    - `POST /ask` - Send queries to the agent
-   - `GET /` (JSON) - API status check
+   - `GET /api/dashboard-data` - Dashboard analytics data
 
 ## 💬 Usage Examples
 
@@ -112,21 +112,6 @@ PostgreSQL Database
 - "Explain the shipping process"
 - "What are the benefits of logistics optimization?"
 
-## 🧪 Testing
-
-Run the test scripts to verify functionality:
-
-```bash
-# Test the agent
-python test_agent.py
-
-# Test SQL functionality
-python test_sql.py
-
-# Test LLM connectivity
-python test_llm.py
-```
-
 ## 📁 Project Structure
 
 ```
@@ -136,10 +121,7 @@ Shipping Agent/
 ├── requirements.txt          # Python dependencies
 ├── populate_shipping_data.py # Database seeding
 ├── templates/
-│   └── index.html           # Web interface
-├── static/
-│   ├── style.css            # Additional styles
-│   └── favicon.ico          # Site icon
+│   └── dashboard.html       # Main dashboard interface
 ├── agent/
 │   └── shipping_agent.py    # Main agent logic
 ├── tools/
@@ -149,12 +131,9 @@ Shipping Agent/
 │   ├── utils.py             # Utilities
 │   ├── sql_history.json     # Query history
 │   └── sql_negative_history.json
-├── llm/
-│   ├── local_llm.py         # General LLM
-│   └── sqlcoder_llm.py      # SQL-specific LLM
-└── frontend/
-    ├── streamlit_app.py     # Alternative Streamlit UI
-    └── dashboard.py         # Analytics dashboard
+└── llm/
+    ├── local_llm.py         # General LLM
+    └── sqlcoder_llm.py      # SQL-specific LLM
 ```
 
 ## 🔧 Configuration
